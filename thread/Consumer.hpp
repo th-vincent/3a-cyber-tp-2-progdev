@@ -27,11 +27,23 @@ public:
     using ProdOrCons::ProdOrCons;
  
     void operator()() override {
-        // TODO :
-        // - Retirer de box_ nb_messages_ entiers avec attente aléatoire avant
-        //   chaque retrait.
-        // - Afficher des messages entre chaque étape pour suivre l'avancement.
-        // - Afficher un message d'erreur si un nombre négatif est extrait.
+        
+        for (int i = 0; i < nb_messages_;  ++i){
+            int random = random_engine_();
+
+            using milliseconds = std::chrono::duration< int, std::milli >;
+            std::this_thread::sleep_for( milliseconds(random) );            // Attente avant le retrait
+
+            int message = box_.get();     // On extrait message de la box
+
+            if (message < 0){
+                osyncstream(std::cerr) << "Erreur : message negatif extrait\n";
+            }
+
+            osyncstream(std::cout) << message << "\n";
+
+            
+        }
     }
 };
 

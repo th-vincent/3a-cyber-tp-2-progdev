@@ -22,7 +22,7 @@
 template< typename MB >
 class ProdOrCons {
 public:
-    ProdOrCons( unsigned name, MB & box, Random & engine, unsigned nb_messages )
+    ProdOrCons( unsigned name, MB& box, Random& engine, unsigned nb_messages )
         : name_(name)
         , box_( box )
         , random_engine_( engine )
@@ -37,9 +37,9 @@ protected:
     // nom sous la forme d'un entier
     const unsigned name_;
     // FIFO où écrire/lire les messages
-    MB & box_;
+    MB& box_;
     // générateur de nombres aléatoires
-    Random & random_engine_;
+    Random& random_engine_;
     // nombre de messages à produire ou lire
     const unsigned nb_messages_;
 };

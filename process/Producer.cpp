@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <thread>
+#include <new>
 
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
@@ -29,8 +30,16 @@ public:
     using ProdOrCons::ProdOrCons;
  
     void operator()() override {
-        // TODO : déposer dans box nb_messages nombres entiers positifs avec attente
-        // aléatoire entre chaque. Afficher des messages pour suivre l'avancement.
+        for (int i = 0; i < nb_messages_;  ++i){
+            int random = random_engine_();
+
+            box_.put(i);     // On envoit i dans la box
+
+            std::cout << i << "\n";   // Affichage standard
+
+            using milliseconds = std::chrono::duration< int, std::milli >;
+            std::this_thread::sleep_for( milliseconds(random) );
+        }
     }
 };
 
@@ -39,9 +48,40 @@ int main()
 {
     using namespace boost::interprocess;
 
-    // TODO : créer la mémoire partagée, la projeter en mémoire,
-    // y construire la boîte à lettres, signaler au consommateur
-    // que la boîte est prête, lancer le producteur
+    // Création de la mémoire partagée
+    shared_memory_object shm(
+        create_only,
+        "SharedMemory",
+        read_write   // Autorise la lecture et l'ecriture
+    );
+
+    // Taille de l'espace qu'elle occupe
+    shm.truncate(65536);
+
+    mapped_region region(
+        shm,
+        read_write
+    );
+
+    void *address = region.get_address();  // On récupère l'adresse de la zone
+
+    MessageBox* box_ = new (address) MessageBox();   // On construit une MessageBox à l'addresse address
+
+
+    // On indique que la MessageBox est prête
+    named_semaphore ready(
+        open_or_create,
+        "MessageBox ready",
+        0
+    );
+
+    ready.post();
+
+
+    // On crée le producer et on le lance
+    Random engine(100);
+    Producer producer(1u, *box_, engine, 20);
+    producer();
     
     return 0;
 }

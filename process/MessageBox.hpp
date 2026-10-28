@@ -25,16 +25,38 @@
 class MessageBox : public BasicMessageBox {
 public:
     void put( int message ) {
-        // TODO : ajouter les mecanismes de synchronisation
-        basic_put( message );
+
+        boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(mutex_);
+ 
+        while (count_ >= box_size_) {
+            not_full_.wait(lock);   // Forme adaptée à la librairie boost
+        }
+
+        basic_put(message);
+        ++count_;
+  
+        not_empty_.notify_one();   // On reveille l'autre thread (il y en un qu'un autre)
     }
  
     int get() {
-        // TODO : ajouter les mecanismes de synchronisation
-        int message{ basic_get() };
+        boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(mutex_);
+
+    
+        while (count_ == 0) {
+        not_empty_.wait(lock);   // Forme adaptée àn la librairie boost
+        }
+
+        int message = basic_get();
+        --count_;
+
+        not_full_.notify_one();   // On reveille l'autre thread (il y en un qu'un autre)
+
         return message;
-    }
+        }
 private:
-    // TODO : ajouter les objets de synchronisation
+    boost::interprocess::interprocess_mutex mutex_; // On ajoute un mutex pour la synchronisation
+    boost::interprocess::interprocess_condition not_empty_;
+    boost::interprocess::interprocess_condition not_full_;
+    unsigned count_ = 0;  // Compteur de message disponibles
 };
  

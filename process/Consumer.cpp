@@ -29,9 +29,23 @@ public:
     using ProdOrCons::ProdOrCons;
  
     void operator()() override {
-        // TODO :retirer de box_ nb_messages_ entiers avec attente aléatoire avant
-        // chaque retrait. Afficher des messages pour suivre l'avancement.
-        // Afficher un message d'erreur si un nombre négatif est extrait.
+
+        for (int i = 0; i < nb_messages_;  ++i){
+            int random = random_engine_();
+
+            using milliseconds = std::chrono::duration< int, std::milli >;
+            std::this_thread::sleep_for( milliseconds(random) );            // Attente avant le retrait
+
+            int message = box_.get();     // On extrait message de la box
+
+            if (message < 0){
+                std::cerr << "Erreur : message negatif extrait\n";
+            }
+
+            std::cout << message << "\n";
+
+            
+        }
     }
 };
 
@@ -40,10 +54,33 @@ int main()
 {
     using namespace boost::interprocess;
 
-    // TODO : attendre que le producteur ait signalé que la boîte
-    // est prête, accéder à la mémoire partagée, la projeter en mémoire,
-    // y accéder comme boîte à lettres, lancer le consommateur
+    // On attend le signal du producer qui nous dit que la box est prête
+
+    named_semaphore ready(
+        open_only,
+        "MessageBox ready"
+    );
+
+    ready.wait();
     
+    // On ouvre la mémoire partagée
+    shared_memory_object shm(
+        open_only,
+        "SharedMemory",
+        read_write
+    );
+
+    mapped_region region(shm, read_write);
+
+    // On récupère son address
+    void* address = region.get_address();
+    MessageBox* box_ = static_cast<MessageBox*>(address);  // On doit converitr le type de pointeur qu'on obtient
+
+    // On crée le consumer et on le lance
+    Random engine(100);
+    Consumer consumer(2u, *box_, engine, 20);
+    consumer();
+
     return 0;
 }
 

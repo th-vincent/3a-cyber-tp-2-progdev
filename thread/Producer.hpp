@@ -26,10 +26,18 @@ public:
     using ProdOrCons::ProdOrCons;
  
     void operator()() override {
-        // TODO : 
-        // - Déposer dans box_ nb_messages_ entiers positifs avec attente
-        //   aléatoire avant chaque dépôt.
-        // - Afficher des messages entre chaque étape pour suivre l'avancement.
+
+        for (int i = 0; i < nb_messages_;  ++i){
+            int random = random_engine_();
+
+            box_.put(i);     // On envoit i dans la box
+
+            osyncstream(std::cout) << i << "\n";
+
+            using milliseconds = std::chrono::duration< int, std::milli >;
+            std::this_thread::sleep_for( milliseconds(random) );
+        }
+
     }
 };
  

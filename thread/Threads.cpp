@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <thread>
+#include <vector>
  
  
 #include "../Random.hpp"
@@ -24,11 +25,16 @@
  */
 void one_producer_one_consumer() {
     // TODO :
-    // - Créer un générateur de nombres aléatoires
-    // - Créer une boîte à lettres
-    // - Créer un producteur et un consommateur
-    // - Créer les threads correspondants
-    // - Attendre la fin des threads
+    Random engine(100);
+    MessageBox box;
+    Producer producer(1u, box, engine, 20);  // 1u pour unsigned
+    Consumer consumer(2u, box, engine, 20);
+
+    std::thread producer_thread(std::ref(producer));  // On crée les threads qui executent les operateurs
+    std::thread consumer_thread(std::ref(consumer));
+
+    producer_thread.join();  // On attend la fin des threads avec .join()
+    consumer_thread.join();
  
 }
 
@@ -36,18 +42,34 @@ void one_producer_one_consumer() {
  * Test avec plusieurs producteurs et consommateurs
  */
 void several_producers_and_consumers() {
-    // TODO :
-    // - Créer un générateur de nombres aléatoires
-    // - Créer une boîte à lettres
-    // - Créer entre 10 et 20 consommateurs et 2 fois plus de producteurs 
-    // - Créer les threads correspondants
-    // - Attendre la fin des threads
- 
+    
+    MessageBox box;
+
+    std::vector<std::thread> group;
+
+    // On crée 6 générateurs aléatoires
+    Random r1(100), r2(100), r3(100), r4(100), r5(100), r6(100);
+
+    // 4 producteurs, 10 messages chacun
+    group.push_back(std::thread{Producer{1u, box, r1, 10}});
+    group.push_back(std::thread{Producer{2u, box, r2, 10}});
+    group.push_back(std::thread{Producer{3u, box, r3, 10}});
+    group.push_back(std::thread{Producer{4u, box, r4, 10}});
+
+    // 2 consommateurs, 20 messages chacun
+    group.push_back(std::thread{Consumer{5u, box, r5, 20}});
+    group.push_back(std::thread{Consumer{6u, box, r6, 20}});
+
+    // Attendre la fin de tous les threads
+    for (std::thread &thread : group) {
+        thread.join();
+    }
+
 }
 
 int main() {
-    one_producer_one_consumer();
-    //several_producers_and_consumers();
+    //one_producer_one_consumer();
+    several_producers_and_consumers();
     return 0;
 }
 

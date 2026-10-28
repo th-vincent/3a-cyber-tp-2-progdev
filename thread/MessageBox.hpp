@@ -21,21 +21,38 @@
 class MessageBox : public BasicMessageBox {
 public:
     void put( int message ) {
-        // TODO :
-        // - Ajouter les instructions de synchronisation
-        // - Ne pas faire d'affichage dans cette méthode
-        basic_put( message );
+
+        std::unique_lock<std::mutex> lock(mutex_);
+ 
+        not_full_.wait(lock, [this]() {
+        return count_ < box_size_;    // On regarde s'il reste de la place, sinon, on attend
+        });
+
+        basic_put(message);
+        ++count_;
+  
+        not_empty_.notify_one();   // On reveille l'autre thread (il y en un qu'un autre)
     }
  
     int get() {
-        // TODO :
-        // - Ajouter les instructions de synchronisation
-        // - Ne pas faire d'affichage dans cette méthode
-        int message{ basic_get() };
+        std::unique_lock<std::mutex> lock(mutex_);
+
+    
+        not_empty_.wait(lock, [this]() {
+        return count_ > 0;   // On regarde si la boite contient un message, sinon, on attend
+        });
+
+        int message = basic_get();
+        --count_;
+
+        not_full_.notify_one();   // On reveille l'autre thread (il y en un qu'un autre)
+
         return message;
-    }
+        }
 private:
-    // TODO : 
-    // - Ajouter les objets de synchronisation
+    std::mutex mutex_; // On ajoute un mutex pour la synchronisation
+    std::condition_variable not_empty_;
+    std::condition_variable not_full_;
+    unsigned count_ = 0;  // Compteur de message disponibles
 };
  
